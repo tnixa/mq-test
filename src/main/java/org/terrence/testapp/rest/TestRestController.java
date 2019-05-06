@@ -9,6 +9,7 @@ import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.Class
 import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.Classifier;
 import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.ClassifyOptions;
 import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.CreateClassifierOptions;
+import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.DeleteClassifierOptions;
 import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.GetClassifierOptions;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,10 +79,16 @@ public class TestRestController {
 
           System.out.println(classification);
 
+          // check classifier output
           if (classification.toString().contains(expectedClassText)) {
-            // check classifier output
             pw.println("PASS: Classification results contain keyword: '" + expectedClassText + "'");
             pw.flush();
+
+            // delete classifier
+            DeleteClassifierOptions deleteOptions = new DeleteClassifierOptions.Builder().classifierId(classifierId)
+                .build();
+            naturalLanguageClassifier.deleteClassifier(deleteOptions).execute();
+
             return sw.toString();
           } else {
             pw.println("FAIL: Classification results do not contain keyword: '" + expectedClassText + "'");
