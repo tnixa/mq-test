@@ -1,16 +1,17 @@
 package org.terrence.testapp.rest;
 
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import com.ibm.watson.developer_cloud.natural_language_classifier.v1.NaturalLanguageClassifier;
-import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.Classification;
-import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.Classifier;
-import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.ClassifyOptions;
-import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.CreateClassifierOptions;
-import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.DeleteClassifierOptions;
-import com.ibm.watson.developer_cloud.natural_language_classifier.v1.model.GetClassifierOptions;
+import com.google.gson.stream.JsonReader;
+
+import com.ibm.watson.developer_cloud.personality_insights.v3.PersonalityInsights;
+import com.ibm.watson.developer_cloud.personality_insights.v3.model.Content;
+import com.ibm.watson.developer_cloud.personality_insights.v3.model.Profile;
+import com.ibm.watson.developer_cloud.personality_insights.v3.model.ProfileOptions;
+import com.ibm.watson.developer_cloud.util.GsonSingleton;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,11 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestRestController {
 
   @Autowired
-  protected NaturalLanguageClassifier naturalLanguageClassifier;
+  protected PersonalityInsights personalityInsights;
 
-  // Test the classifier by analyzing test text
-
-  private String classifierId = null;
+  // Test the Insights by analyzing a test json file
 
   @RequestMapping(value = "/test", produces = "text/plain")
   public String runTest() {
@@ -32,73 +31,24 @@ public class TestRestController {
     PrintWriter pw = new PrintWriter(sw);
 
     try {
+      pw.println("Beginning test...");
+      InputStream profileStream = this.getClass().getResourceAsStream("/profile.json");
+      InputStreamReader inputStreamReader = new InputStreamReader(profileStream);
+      JsonReader jsonReader = new JsonReader(inputStreamReader);
+      Content content = GsonSingleton.getGson().fromJson(jsonReader, Content.class);
 
-      // if the classifierId is null then a classifier has not been created so create
-      // one
-      // else a classifier exists and we need to check if it is done training
-      // if it is done training then classify the test text
-      // else it is still training so return in progress message
+      ProfileOptions profileOptions = new ProfileOptions.Builder().content(content).consumptionPreferences(true)
+          .rawScores(true).build();
+      pw.println("Creating Personality Insights from profile.json file");
+      Profile profile = personalityInsights.profile(profileOptions).execute();
+      System.out.println("Profile Results: " + profile);
 
-      if (classifierId == null) {
-        // crete classifier
-        System.out.println("classifierId is null");
-
-        // training and metadata files stored in the jar in the 'resources' folder
-        InputStream trainStream = this.getClass().getResourceAsStream("/weather_data_train.csv");
-        InputStream metadataStream = this.getClass().getResourceAsStream("/metadata.json");
-
-        CreateClassifierOptions createOptions = new CreateClassifierOptions.Builder().metadata(metadataStream)
-            .trainingData(trainStream).build();
-
-        Classifier classifier = naturalLanguageClassifier.createClassifier(createOptions).execute();
-        classifierId = classifier.getClassifierId();
-
-        return "Classifier created";
-
+      // check to see if query exists in the results
+      String expectedKeyword = "Agreeableness";
+      if (profile.toString().toLowerCase().contains(expectedKeyword.toLowerCase())) {
+        pw.println("PASS: Personality Insight results contain expected keyword: " + expectedKeyword);
       } else {
-        // return status
-        System.out.println("classifierId is not null: " + classifierId);
-
-        GetClassifierOptions getOptions = new GetClassifierOptions.Builder().classifierId(classifierId).build();
-
-        Classifier classifierNew = naturalLanguageClassifier.getClassifier(getOptions).execute();
-
-        System.out.println("ClassifierNew status: " + classifierNew.getStatus());
-
-        if (classifierNew.getStatus().equalsIgnoreCase("Available")) {
-          // training is ready so do the test
-          pw.println("Beginning test...");
-          String testText = "How hot will it be today?";
-          String expectedClassText = "temperature";
-          pw.println("testText is: " + testText);
-
-          ClassifyOptions classifyOptions = new ClassifyOptions.Builder().classifierId(classifierId).text(testText)
-              .build();
-
-          Classification classification = naturalLanguageClassifier.classify(classifyOptions).execute();
-
-          System.out.println(classification);
-
-          // check classifier output
-          if (classification.toString().contains(expectedClassText)) {
-            pw.println("PASS: Classification results contain keyword: '" + expectedClassText + "'");
-            pw.flush();
-
-            // delete classifier
-            DeleteClassifierOptions deleteOptions = new DeleteClassifierOptions.Builder().classifierId(classifierId)
-                .build();
-            naturalLanguageClassifier.deleteClassifier(deleteOptions).execute();
-
-            return sw.toString();
-          } else {
-            pw.println("FAIL: Classification results do not contain keyword: '" + expectedClassText + "'");
-            pw.flush();
-            return sw.toString();
-          }
-        } else {
-          // training is not ready
-          return "Training in progress";
-        }
+        pw.println("FAIL: Personality Insight results do not contain expected keyword: " + expectedKeyword);
       }
 
     } catch (Exception e) {
