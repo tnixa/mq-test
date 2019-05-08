@@ -1,17 +1,12 @@
 package org.terrence.testapp.rest;
 
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import com.google.gson.stream.JsonReader;
-
-import com.ibm.watson.developer_cloud.personality_insights.v3.PersonalityInsights;
-import com.ibm.watson.developer_cloud.personality_insights.v3.model.Content;
-import com.ibm.watson.developer_cloud.personality_insights.v3.model.Profile;
-import com.ibm.watson.developer_cloud.personality_insights.v3.model.ProfileOptions;
-import com.ibm.watson.developer_cloud.util.GsonSingleton;
+import com.ibm.watson.visual_recognition.v3.VisualRecognition;
+import com.ibm.watson.visual_recognition.v3.model.ClassifiedImages;
+import com.ibm.watson.visual_recognition.v3.model.ClassifyOptions;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,9 +16,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestRestController {
 
   @Autowired
-  protected PersonalityInsights personalityInsights;
+  protected VisualRecognition visualRecognition;
 
-  // Test the Insights by analyzing a test json file
+  // Create the input stream from the jpg file
+
+  public static InputStream createInputStream() throws Exception {
+    InputStream inputStream = TestRestController.class.getResourceAsStream("/640px-IBM_VGA_90X8941_on_PS55.jpg");
+    return inputStream;
+  }
+
+  // Test the Visual Recognizer by analyzing a test image
 
   @RequestMapping(value = "/test", produces = "text/plain")
   public String runTest() {
@@ -32,23 +34,19 @@ public class TestRestController {
 
     try {
       pw.println("Beginning test...");
-      InputStream profileStream = this.getClass().getResourceAsStream("/profile.json");
-      InputStreamReader inputStreamReader = new InputStreamReader(profileStream);
-      JsonReader jsonReader = new JsonReader(inputStreamReader);
-      Content content = GsonSingleton.getGson().fromJson(jsonReader, Content.class);
 
-      ProfileOptions profileOptions = new ProfileOptions.Builder().content(content).consumptionPreferences(true)
-          .rawScores(true).build();
-      pw.println("Creating Personality Insights from profile.json file");
-      Profile profile = personalityInsights.profile(profileOptions).execute();
-      System.out.println("Profile Results: " + profile);
+      ClassifyOptions classifyOptions = new ClassifyOptions.Builder().imagesFile(createInputStream())
+          .imagesFilename("640px-IBM_VGA_90X8941_on_PS55.jpg").build();
+
+      ClassifiedImages result = visualRecognition.classify(classifyOptions).execute().getResult();
+      System.out.println(result);
 
       // check to see if query exists in the results
-      String expectedKeyword = "Agreeableness";
-      if (profile.toString().toLowerCase().contains(expectedKeyword.toLowerCase())) {
-        pw.println("PASS: Personality Insight results contain expected keyword: " + expectedKeyword);
+      String expectedKeyword = "computer circuit";
+      if (result.toString().toLowerCase().contains(expectedKeyword.toLowerCase())) {
+        pw.println("PASS: Visual Recognizer results contain expected keyword: " + expectedKeyword);
       } else {
-        pw.println("FAIL: Personality Insight results do not contain expected keyword: " + expectedKeyword);
+        pw.println("FAIL: Visual Recognizer results do not contain expected keyword: " + expectedKeyword);
       }
 
     } catch (Exception e) {
