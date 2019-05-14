@@ -3,6 +3,7 @@ Project to test an MQ service instance on IBM Cloud. A sample will be sent and r
 
 ## Setup
 1. You'll need ibm cloud CLI from https://cloud.ibm.com/docs/cli/reference/ibmcloud?topic=cloud-cli-install-ibmcloud-cli#install_use and bx cf installed and configured to talk to the appropriate cf org/space etc.
+2. You'll need credentials from the MQ service which can be exported as a json from `Queue Managers` tab and from `Create new API key` under `Application Properties` tab 
 
 ## Build
 ```
