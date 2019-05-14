@@ -29,25 +29,17 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.ibm.watson.developer_cloud</groupId>
-			<artifactId>watson-spring-boot-starter</artifactId>
-			<version>1.0.0</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>io.pivotal.cfenv</groupId>
-			<artifactId>java-cfenv-boot</artifactId>
-			<version>1.0.0.RELEASE</version>
-		</dependency>	
-	</dependencies>
+			<groupId>com.ibm.mq</groupId>
+			<artifactId>mq-jms-spring-boot-starter</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+</dependencies>
 
-	<repositories>
-		<repository>
-			<id>ibm-cloud</id>
-			<url>https://dl.bintray.com/ibm-cloud-sdks/ibm-cloud-sdk-repo</url>
-		</repository>
-    </repositories>
-
-	<build>
+<build>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
